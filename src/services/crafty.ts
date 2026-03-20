@@ -13,6 +13,10 @@ async function craftyFetch(path: string, method = "GET"): Promise<unknown> {
     // @ts-ignore — undici dispatcher
     dispatcher: agent,
   });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Crafty ${res.status}: ${text}`);
+  }
   return res.json();
 }
 
