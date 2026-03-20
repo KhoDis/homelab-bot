@@ -1,4 +1,5 @@
 import { Bot } from "grammy";
+import { SocksProxyAgent } from "socks-proxy-agent";
 import { registerCommands } from "./bot/commands.js";
 
 const BOT_TOKEN = process.env.BOT_TOKEN!;
@@ -6,7 +7,10 @@ const ALLOWED_IDS = (process.env.ALLOWED_IDS ?? "")
   .split(",")
   .map((id) => Number(id.trim()));
 
-const bot = new Bot(BOT_TOKEN);
+const agent = new SocksProxyAgent("socks5://host.docker.internal:1080");
+const bot = new Bot(BOT_TOKEN, {
+  client: { baseFetchConfig: { agent } },
+});
 
 // Whitelist middleware
 bot.use(async (ctx, next) => {
