@@ -11,6 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/dockerode": "^4.0.1",
+    "dockerode": "^4.0.9",
     "grammy": "^1.41.1",
     "socks-proxy-agent": "^9.0.0"
   },

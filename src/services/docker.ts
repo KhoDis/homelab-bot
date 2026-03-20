@@ -1,29 +1,20 @@
-import { execFile } from "child_process";
-import { promisify } from "util";
+import Dockerode from "dockerode";
 import type { Service } from "./index.js";
 
-const execFileAsync = promisify(execFile);
+const docker = new Dockerode({ socketPath: "/var/run/docker.sock" });
 
 export const dockerService: Service = {
   name: "Docker",
 
   async getStatus(): Promise<string> {
-    const { stdout } = await execFileAsync("docker", [
-      "ps",
-      "--format",
-      "{{.Names}}\t{{.Status}}",
-    ]);
+    const containers = await docker.listContainers();
 
-    if (!stdout.trim()) return "Docker: no running containers";
+    if (containers.length === 0) return "no running containers";
 
-    const lines = stdout
-      .trim()
-      .split("\n")
-      .map((line: string) => {
-        const [name, ...statusParts] = line.split("\t");
-        return `• ${name} — ${statusParts.join(" ")}`;
-      });
+    const lines = containers.map(
+      (c) => `• ${(c.Names[0] ?? c.Id).replace(/^\//, "")} — ${c.Status}`
+    );
 
-    return `Docker:\n${lines.join("\n")}`;
+    return lines.join("\n");
   },
 };
