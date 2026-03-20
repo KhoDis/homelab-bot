@@ -1,6 +1,7 @@
 import { Bot } from "grammy";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import { registerCommands } from "./bot/commands.js";
+import { startAlerts } from "./monitor/alerts.js";
 
 const BOT_TOKEN = process.env.BOT_TOKEN!;
 const ALLOWED_IDS = (process.env.ALLOWED_IDS ?? "")
@@ -26,4 +27,5 @@ bot.command("start", (ctx) => ctx.reply("Homelab bot is running."));
 registerCommands(bot);
 
 bot.start();
+startAlerts(bot.api, ALLOWED_IDS);
 console.log("Bot started.");
