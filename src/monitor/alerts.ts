@@ -4,6 +4,7 @@ import { checkSshFailures } from "./ssh.js";
 import { checkNextcloudFailures } from "./nextcloud.js";
 import { checkNpmFailures } from "./npm.js";
 import { checkCraftyFailures } from "./crafty.js";
+import { checkDiskAlerts } from "../services/disk.js";
 
 async function buildAlert(): Promise<string | null> {
   const [ssh, nc, npm, crafty] = await Promise.all([
@@ -43,10 +44,20 @@ async function buildAlert(): Promise<string | null> {
 export function startAlerts(api: Api, chatIds: number[]): void {
   cron.schedule("*/5 * * * *", async () => {
     const message = await buildAlert();
-    if (!message) return;
+    if (message) {
+      for (const chatId of chatIds) {
+        await api.sendMessage(chatId, message, { parse_mode: "Markdown" });
+      }
+    }
+  });
 
-    for (const chatId of chatIds) {
-      await api.sendMessage(chatId, message, { parse_mode: "Markdown" });
+  // Disk check once per hour
+  cron.schedule("0 * * * *", async () => {
+    const message = await checkDiskAlerts();
+    if (message) {
+      for (const chatId of chatIds) {
+        await api.sendMessage(chatId, message, { parse_mode: "Markdown" });
+      }
     }
   });
 }

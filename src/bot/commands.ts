@@ -3,10 +3,12 @@ import { dockerService } from "../services/docker.js";
 import { nextcloudService } from "../services/nextcloud.js";
 import { craftyService } from "../services/crafty.js";
 import { wireguardService } from "../services/wireguard.js";
+import { diskService } from "../services/disk.js";
 import type { Service } from "../services/index.js";
 
 const services: Service[] = [
   dockerService,
+  diskService,
   nextcloudService,
   craftyService,
   wireguardService,

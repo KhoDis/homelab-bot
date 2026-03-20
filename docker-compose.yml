@@ -8,3 +8,5 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/log/auth.log:/var/log/auth.log:ro
+      - /srv/dev-disk-by-uuid-f8a349ee-8428-4cda-a0ae-d3846e325e5b:/mnt/data-32g:ro
+      - /srv/dev-disk-by-uuid-59fdbcd2-b650-4f2a-89af-a7b04c1d618d:/mnt/data-3tb:ro

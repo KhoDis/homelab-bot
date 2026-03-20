@@ -10,6 +10,7 @@ async function craftyFetch(path: string, method = "GET"): Promise<unknown> {
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
     headers: { Authorization: `Bearer ${TOKEN}` },
+    signal: AbortSignal.timeout(5000),
     // @ts-ignore — undici dispatcher
     dispatcher: agent,
   });

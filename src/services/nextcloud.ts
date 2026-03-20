@@ -8,49 +8,50 @@ function authHeader(): string {
   return "Basic " + Buffer.from(`${USER}:${PASSWORD}`).toString("base64");
 }
 
-interface NcStatus {
-  installed: boolean;
-  maintenance: boolean;
-  version: string;
-}
+const headers = {
+  Authorization: authHeader(),
+  "OCS-APIREQUEST": "true",
+  Accept: "application/json",
+};
 
-interface NcUserData {
-  ocs: {
-    data: {
-      quota: {
-        used: number;
-        total: number;
-      };
-    };
-  };
+function formatBytes(bytes: number): string {
+  if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(0)} MB`;
+  return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
 }
 
 export const nextcloudService: Service = {
   name: "Nextcloud",
 
   async getStatus(): Promise<string> {
-    const [statusRes, userRes] = await Promise.all([
-      fetch(`${BASE_URL}/status.php`),
-      fetch(`${BASE_URL}/ocs/v1.php/cloud/users/${USER}`, {
-        headers: {
-          Authorization: authHeader(),
-          "OCS-APIREQUEST": "true",
-          Accept: "application/json",
-        },
-      }),
-    ]);
+    const statusRes = await fetch(`${BASE_URL}/status.php`);
+    const status = (await statusRes.json()) as {
+      maintenance: boolean;
+      version: string;
+    };
 
-    const status = (await statusRes.json()) as NcStatus;
-    const userData = (await userRes.json()) as NcUserData;
-    const quota = userData.ocs.data.quota;
+    const usersRes = await fetch(`${BASE_URL}/ocs/v1.php/cloud/users`, { headers });
+    const usersData = (await usersRes.json()) as {
+      ocs: { data: { users: string[] } };
+    };
 
-    const used = (quota.used / 1e9).toFixed(1);
-    const total =
-      quota.total === -3
-        ? "unlimited"
-        : `${(quota.total / 1e9).toFixed(1)} GB`;
+    const userIds = usersData.ocs.data.users;
+    const quotas = await Promise.all(
+      userIds.map(async (id) => {
+        const res = await fetch(`${BASE_URL}/ocs/v1.php/cloud/users/${id}`, { headers });
+        const data = (await res.json()) as {
+          ocs: { data: { quota: { used: number; total: number } } };
+        };
+        return { id, quota: data.ocs.data.quota };
+      })
+    );
 
     const mode = status.maintenance ? "maintenance" : "online";
-    return `${mode} | v${status.version}\nStorage: ${used} GB / ${total}`;
+    const lines = quotas.map(({ id, quota }) => {
+      const used = formatBytes(quota.used);
+      const total = quota.total === -3 ? "unlimited" : formatBytes(quota.total);
+      return `• ${id}: ${used} / ${total}`;
+    });
+
+    return `${mode} | v${status.version}\n${lines.join("\n")}`;
   },
 };
